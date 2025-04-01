@@ -1,0 +1,75 @@
+# @title Grey Wolf Optimization
+import numpy as np
+# Objective Function (for example, a simple Sphere Function)
+def objective_function(x):
+    return np.sum(x**2)
+class GreyWolfOptimization:
+    def __init__(self, objective_function, n_wolves, n_variables, max_iter, lb, ub):
+        self.objective_function = objective_function  # Objective function to optimize
+        self.n_wolves = n_wolves  # Number of wolves in the population
+        self.n_variables = n_variables  # Number of variables (dimensions)
+        self.max_iter = max_iter  # Maximum number of iterations
+        self.lb = lb  # Lower bound for each variable
+        self.ub = ub  # Upper bound for each variable
+        # Initialize positions of wolves randomly within the search space
+        self.positions = np.random.uniform(self.lb, self.ub, (self.n_wolves, self.n_variables))
+        # Initialize alpha, beta, and delta wolves
+        self.alpha_position = np.zeros(self.n_variables)
+        self.alpha_score = float("inf")
+        self.beta_position = np.zeros(self.n_variables)
+        self.beta_score = float("inf")
+        self.delta_position = np.zeros(self.n_variables)
+        self.delta_score = float("inf")
+    def update_positions(self, a):
+        # Update the position of each wolf
+        for i in range(self.n_wolves):
+            # Update each dimension of the wolf position
+            for j in range(self.n_variables):
+                r1 = np.random.rand()
+                r2 = np.random.rand()
+                # Update the position based on the leadership of Alpha, Beta, and Delta
+                A1 = 2 * a * r1 - a
+                C1 = 2 * r2
+                D_alpha = np.abs(C1 * self.alpha_position[j] - self.positions[i, j])
+                A2 = 2 * a * r1 - a
+                C2 = 2 * r2
+                D_beta = np.abs(C2 * self.beta_position[j] - self.positions[i, j])
+                A3 = 2 * a * r1 - a
+                C3 = 2 * r2
+                D_delta = np.abs(C3 * self.delta_position[j] - self.positions[i, j])
+                # Update the position of the wolf
+                self.positions[i, j] = self.positions[i, j] + (A1 * D_alpha + A2 * D_beta + A3 * D_delta)
+                # Ensure the wolf stays within the bounds
+                self.positions[i, j] = np.clip(self.positions[i, j], self.lb[j], self.ub[j])
+    def optimize(self):
+        # Main loop for optimization process
+        for t in range(self.max_iter):
+            a = 2 - t * (2 / self.max_iter)  # Decreasing factor a
+            for i in range(self.n_wolves):
+                fitness = self.objective_function(self.positions[i])
+                # Update alpha, beta, delta positions based on fitness
+                if fitness < self.alpha_score:
+                    self.alpha_score = fitness
+                    self.alpha_position = self.positions[i]
+                elif fitness < self.beta_score:
+                    self.beta_score = fitness
+                    self.beta_position = self.positions[i]
+                elif fitness < self.delta_score:
+                    self.delta_score = fitness
+                    self.delta_position = self.positions[i]
+            # Update positions of wolves based on the alpha, beta, and delta wolves
+            self.update_positions(a)
+            # Print the best solution found in the current iteration
+            print(f"Iteration {t+1}/{self.max_iter}, Best Fitness: {self.alpha_score}")
+        return self.alpha_position, self.alpha_score
+# Parameters
+n_wolves = 30  # Number of wolves in the population
+n_variables = 5  # Number of dimensions
+max_iter = 100  # Maximum number of iterations
+lb = np.array([-10] * n_variables)  # Lower bound for each variable
+ub = np.array([10] * n_variables)  # Upper bound for each variable
+# Run the Grey Wolf Optimization algorithm
+gwo = GreyWolfOptimization(objective_function, n_wolves, n_variables, max_iter, lb, ub)
+best_position, best_fitness = gwo.optimize()
+print("Optimal Solution Found: ", best_position)
+print("Best Fitness Value: ", best_fitness)
