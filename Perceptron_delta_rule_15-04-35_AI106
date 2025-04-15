@@ -1,0 +1,30 @@
+# @title a)implement a single layered perceptron using the perceptron delta rule for training
+import numpy as np
+def activation(x):
+    return np.where(x >= 0, 1, 0)
+class Perceptron:
+    def __init__(self, input_size, learning_rate=0.1, epochs=10):
+        self.weights = np.zeros(input_size + 1)
+        self.lr = learning_rate
+        self.epochs = epochs
+
+    def predict(self, x):
+        x = np.insert(x, 0, 1)
+        return activation(np.dot(self.weights, x))
+
+    def train(self, X, y):
+        for _ in range(self.epochs):
+            for xi, target in zip(X, y):
+                xi = np.insert(xi, 0, 1)
+                output = activation(np.dot(self.weights, xi))
+                error = target - output
+                self.weights += self.lr * error * xi
+X = np.array([[0,0],[0,1],[1,0],[1,1]])
+y = np.array([0,0,0,1])
+
+p = Perceptron(input_size=2)
+p.train(X, y)
+
+print("Trained weights:", p.weights)
+for i in X:
+    print(f"Input: {i}, Predicted: {p.predict(i)}")
