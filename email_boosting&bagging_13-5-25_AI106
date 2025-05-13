@@ -1,0 +1,107 @@
+# @title 13-5-25_bagging and boosting for spam email
+# @title 13-5-25_bagging and boosting for spam email
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.ensemble import BaggingClassifier, AdaBoostClassifier
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix, roc_curve, auc
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.tree import DecisionTreeClassifier
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Load the dataset
+file_path = 'emailspam.csv'
+data = pd.read_csv(file_path)
+
+# Data Preprocessing
+data = data[data['Category'].isin(['ham', 'spam'])]
+label_encoder = LabelEncoder()
+data['Category'] = label_encoder.fit_transform(data['Category'])
+
+# Vectorizing the text messages
+vectorizer = CountVectorizer()
+X = vectorizer.fit_transform(data['Message'])
+y = data['Category']
+
+# Splitting the dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# ---------------------------
+# 1️⃣ Bagging Implementation
+# ---------------------------
+bagging_model = BaggingClassifier(
+    estimator=DecisionTreeClassifier(),
+    n_estimators=50,
+    random_state=42
+)
+bagging_model.fit(X_train, y_train)
+y_pred_bagging = bagging_model.predict(X_test)
+
+# Print Evaluation for Bagging
+print("🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹")
+print("📌 **Bagging Model Evaluation**")
+print("Accuracy: ", accuracy_score(y_test, y_pred_bagging))
+print("Classification Report:\n", classification_report(y_test, y_pred_bagging, target_names=['ham', 'spam']))
+print("🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹🔹\n")
+
+# ---------------------------
+# 2️⃣ Boosting Implementation
+# ---------------------------
+boosting_model = AdaBoostClassifier(
+    estimator=DecisionTreeClassifier(),
+    n_estimators=50,
+    random_state=42
+)
+boosting_model.fit(X_train, y_train)
+y_pred_boosting = boosting_model.predict(X_test)
+
+# Print Evaluation for Boosting
+print("📌 **Boosting Model Evaluation**")
+print("Accuracy: ", accuracy_score(y_test, y_pred_boosting))
+print("Classification Report:\n", classification_report(y_test, y_pred_boosting, target_names=['ham', 'spam']))
+print("\n")
+
+# ---------------------------
+# 🖌️ Visualization
+# ---------------------------
+
+# Confusion Matrix Plotting
+plt.figure(figsize=(12, 5))
+
+plt.subplot(1, 2, 1)
+sns.heatmap(confusion_matrix(y_test, y_pred_bagging), annot=True, fmt='d', cmap='Blues', xticklabels=['ham', 'spam'], yticklabels=['ham', 'spam'])
+plt.title("Bagging - Confusion Matrix")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+
+plt.subplot(1, 2, 2)
+sns.heatmap(confusion_matrix(y_test, y_pred_boosting), annot=True, fmt='d', cmap='Oranges', xticklabels=['ham', 'spam'], yticklabels=['ham', 'spam'])
+plt.title("Boosting - Confusion Matrix")
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+
+plt.tight_layout()
+plt.show()
+
+# ---------------------------
+# ROC Curve Plotting
+# ---------------------------
+plt.figure(figsize=(8, 6))
+
+# Bagging ROC
+y_pred_bagging_proba = bagging_model.predict_proba(X_test)[:, 1]
+fpr_bagging, tpr_bagging, _ = roc_curve(y_test, y_pred_bagging_proba)
+plt.plot(fpr_bagging, tpr_bagging, label=f'Bagging (AUC = {auc(fpr_bagging, tpr_bagging):.2f})')
+# Boosting ROC
+y_pred_boosting_proba = boosting_model.predict_proba(X_test)[:, 1]
+fpr_boosting, tpr_boosting, _ = roc_curve(y_test, y_pred_boosting_proba)
+plt.plot(fpr_boosting, tpr_boosting, label=f'Boosting (AUC = {auc(fpr_boosting, tpr_boosting):.2f})')
+# Plot settings
+plt.plot([0, 1], [0, 1], 'k--')
+plt.title("ROC Curve")
+plt.xlabel("False Positive Rate")
+plt.ylabel("True Positive Rate")
+plt.legend(loc='lower right')
+plt.grid(True)
+plt.show()
