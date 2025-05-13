@@ -1,0 +1,45 @@
+# @title 6-5-25_demonstrate crisp set for real life iris datatset
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+
+# Load the iris dataset
+iris = load_iris()
+iris_df = pd.DataFrame(iris.data, columns=iris.feature_names)
+iris_df['species'] = pd.Categorical.from_codes(iris.target, iris.target_names)
+
+# Define the crisp set: long-petal flowers (petal length >= 1.5 cm)
+def is_long_petal(petal_length):
+    return petal_length >= 1.5
+
+# Apply the crisp set condition
+iris_df['long_petal'] = iris_df['petal length (cm)'].apply(is_long_petal)
+
+# Print some examples
+print("Flowers with long petals (petal length >= 1.5 cm):")
+print(iris_df[iris_df['long_petal']][['species', 'petal length (cm)']].head())
+
+print("\nFlowers with short petals (petal length < 1.5 cm):")
+print(iris_df[~iris_df['long_petal']][['species', 'petal length (cm)']].head())
+
+# Plotting
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    data=iris_df,
+    x='petal length (cm)',
+    y='petal width (cm)',
+    hue='long_petal',
+    style='species',
+    palette={True: 'green', False: 'red'},
+    s=100
+)
+
+# Add threshold line
+plt.axvline(x=1.5, color='blue', linestyle='--', label='Threshold: 1.5 cm')
+
+plt.title('Crisp Set Demonstration: Long Petal Flowers in Iris Dataset')
+plt.xlabel('Petal Length (cm)')
+plt.ylabel('Petal Width (cm)')
+plt.legend(title='Long Petal')
+plt.show()
