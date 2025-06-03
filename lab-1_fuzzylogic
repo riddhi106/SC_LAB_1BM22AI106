@@ -1,0 +1,55 @@
+import numpy as np
+
+# --- Fuzzy Sets ---
+A = np.array([0.3, 0.7, 1.0])  # Input fuzzy set
+B = np.array([0.6, 0.2, 0.9])  # Output fuzzy set
+
+# --- Fuzzy Relations ---
+R = np.array([  # Relation from A to Y
+    [0.2, 0.5, 0.7],
+    [0.8, 0.4, 0.6],
+    [0.9, 0.3, 0.5]
+])
+
+S = np.array([  # Relation from Y to B
+    [0.3, 0.9, 0.6],
+    [0.6, 0.7, 0.2],
+    [0.5, 0.8, 0.4]
+])
+
+# --- Max-Min Composition ---
+def max_min(R1, R2):
+    return np.array([
+        [np.max(np.minimum(R1[i], R2[:, j])) for j in range(R2.shape[1])]
+        for i in range(R1.shape[0])
+    ])
+
+# --- Mamdani Implication ---
+def mamdani_implication(A, B):
+    return np.array([
+        [min(a, b) for b in B]
+        for a in A
+    ])
+
+# --- Fuzzy Inference (A ∘ ImplicationMatrix) ---
+def fuzzy_infer(A, rule_matrix):
+    return np.array([
+        np.max(np.minimum(A, rule_matrix[:, j]))
+        for j in range(rule_matrix.shape[1])
+    ])
+
+# --- Execution ---
+print("Input A:", A)
+print("Output B:", B)
+
+# 1. Max-Min Composition: R o S
+RS = max_min(R, S)
+print("\nMax-Min Composition (R ∘ S):\n", RS)
+
+# 2. Mamdani Implication Matrix: A => B
+imp_matrix = mamdani_implication(A, B)
+print("\nMamdani Implication Matrix (A ⇒ B):\n", imp_matrix)
+
+# 3. Fuzzy Inference: A ∘ (A ⇒ B)
+inferred = fuzzy_infer(A, imp_matrix)
+print("\nFuzzy Inference Result:\n", inferred)
