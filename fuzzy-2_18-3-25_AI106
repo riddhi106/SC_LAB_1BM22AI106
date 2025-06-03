@@ -1,116 +1,42 @@
 # @title 18-03-25_fuzzy set
-class FzSets:
-    def __init__(self, A=None, nA=None, B=None, nB=None):
-        # Initialize sets and their names
-        self.A = A if A is not None else {}
-        self.B = B if B is not None else {}
-        self.Aname = nA
-        self.Bname = nB
+import numpy as np
 
-        # Initialize operation results
-        self.complement_A = {}
-        self.complement_B = {}
-        self.union_AB = {}
-        self.intersection_AB = {}
-        self.differenceAB = {}
-        self.differenceBA = {}
+# --- Defuzzification Functions ---
 
-        # Flags to track changes
-        self.change_union = False
-        self.change_intersection = False
-        self.change_complement = False
+def centroid(x, mf):
+    return np.sum(x * mf) / np.sum(mf)
 
-    def unionOp(self):
-        if self.change_union:
-            print('Result of UNION operation:', self.union_AB)
-        else:
-            sa = set(self.A.keys())
-            sb = set(self.B.keys())
-            intersectionSet = sa.intersection(sb)
+def mean_of_maximum(x, mf):
+    max_val = np.max(mf)
+    max_indices = np.where(mf == max_val)[0]
+    return np.mean(x[max_indices])
 
-            for i in intersectionSet:
-                self.union_AB[i] = max(self.A[i], self.B[i])
-            for i in sa - intersectionSet:
-                self.union_AB[i] = self.A[i]
-            for i in sb - intersectionSet:
-                self.union_AB[i] = self.B[i]
+# --- Fuzzy Controller ---
 
-            print('Result of UNION operation:', self.union_AB)
-            self.change_union = True
+def fuzzy_controller(error):
+    x = np.linspace(0, 100, 100)  # Output values (0-100%)
 
-    def intersectionOp(self):
-        if self.change_intersection:
-            print('Result of INTERSECTION operation:\n\t\t', self.intersection_AB)
-        else:
-            sa = set(self.A.keys())
-            sb = set(self.B.keys())
-            intersectionSet = sa.intersection(sb)
+    # Fuzzy rules based on error
+    if error < -5:
+        output_mf = np.maximum(0, 1 - (x / 50))  # Low
+    elif -5 <= error <= 5:
+        output_mf = np.maximum(0, 1 - abs(x - 50) / 25)  # Medium
+    else:
+        output_mf = np.maximum(0, (x - 50) / 50)  # High
 
-            for i in intersectionSet:
-                self.intersection_AB[i] = min(self.A[i], self.B[i])
-            for i in sa - intersectionSet:
-                self.intersection_AB[i] = 0.0
-            for i in sb - intersectionSet:
-                self.intersection_AB[i] = 0.0
+    # Defuzzification
+    center = centroid(x, output_mf)
+    mean_max = mean_of_maximum(x, output_mf)
 
-            print('Result of INTERSECTION operation:\n\t\t', self.intersection_AB)
-            self.change_intersection = True
+    return center, mean_max
 
-    def complementOp(self):
-        if self.change_complement:
-            print('Result of COMPLEMENT on', self.Aname, 'operation:', self.complement_A)
-            print('Result of COMPLEMENT on', self.Bname, 'operation:', self.complement_B)
-        else:
-            for i in self.A:
-                self.complement_A[i] = 1 - self.A[i]
-            for i in self.B:
-                self.complement_B[i] = 1 - self.B[i]
+# --- Example Use ---
 
-            print('Result of COMPLEMENT on', self.Aname, 'operation:', self.complement_A)
-            print('Result of COMPLEMENT on', self.Bname, 'operation:', self.complement_B)
+error = -4  # Try values like -8, 0, or +6
 
-            self.change_complement = True
+centroid_output, mean_max_output = fuzzy_controller(error)
 
-    def __oneMinustwo(self, L, R):
-        minus_d = {}
-        Rcomp = {i: 1 - R[i] for i in R}
-        sa = set(L.keys())
-        sb = set(R.keys())
-        intersectionSet = sa.intersection(sb)  # min(A, complement(B))
-
-        # l - r OR a - b
-        for i in intersectionSet:
-            minus_d[i] = min(L[i], Rcomp[i])
-        for i in sa - intersectionSet:
-            minus_d[i] = 0.0
-        for i in sb - intersectionSet:
-            minus_d[i] = 0.0
-
-        return minus_d
-
-    def AminusB(self):
-        self.differenceAB = self.__oneMinustwo(self.A, self.B)
-        print('Result of DIFFERENCE', self.Aname, '|', self.Bname, 'operation:\n\t\t', self.differenceAB)
-
-    def BminusA(self):
-        self.differenceBA = self.__oneMinustwo(self.B, self.A)
-        print('Result of DIFFERENCE', self.Bname, '|', self.Aname, 'operation:\n\t\t', self.differenceBA)
-
-    def change_Setz(self, A, B, nA, nB):
-        self.A = A
-        self.B = B
-        self.Aname = nA
-        self.Bname = nB
-
-        print('\nSet', self.Aname, ':', self.A)
-        print('Set', self.Bname, ':', self.B, end='')
-
-        self.change_union = True
-        self.change_intersection = True
-        self.change_complement = True
-        print('\t\t\t Cache Reset')
-
-    def displaySets(self):
-        print('\nSet', self.Aname, ':', self.A)
-        print('Set', self.Bname, ':', self.B)
-
+print("=== Fuzzy Controller Output ===")
+print(f"Error: {error}")
+print(f"Centroid Defuzzification: {centroid_output:.2f}")
+print(f"Mean of Maximum: {mean_max_output:.2f}")
